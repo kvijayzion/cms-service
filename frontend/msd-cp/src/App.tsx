@@ -86,7 +86,7 @@ const App: React.FC = () => {
                     `
                 }}
               >
-                <div className="w-[480px] p-4 h-full overflow-hidden">
+                <div className="max-w-[480px] max-h-[854px] aspect-[9/16] p-4 h-full overflow-hidden">
                   <ErrorBoundary isDarkMode={isDarkMode}>
                     <VideoPlayer isDarkMode={isDarkMode} />
                   </ErrorBoundary>
