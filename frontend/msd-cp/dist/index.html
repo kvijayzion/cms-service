@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MySillyDreams - Content Platform</title>
+    <meta name="description" content="MySillyDreams Content Management Platform - Create, manage, and stream your content" />
+    
+    <!-- Preconnect to improve performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Google Fonts for better typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    
+    <!-- Theme color for mobile browsers -->
+    <meta name="theme-color" content="#6366f1" />
+    
+    <!-- Open Graph meta tags for social sharing -->
+    <meta property="og:title" content="MySillyDreams - Content Platform" />
+    <meta property="og:description" content="Create, manage, and stream your content with MySillyDreams" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://mysillydreams.com" />
+    
+    <!-- Prevent FOUC (Flash of Unstyled Content) -->
+    <style>
+      /* Minimal critical CSS to prevent layout shift */
+      * {
+        box-sizing: border-box;
+      }
+      
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-color: #f3f4f6;
+        color: #1f2937;
+      }
+      
+      #root {
+        min-height: 100vh;
+        width: 100%;
+      }
+      
+      /* Loading spinner for initial load */
+      .loading-spinner {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        border: 4px solid #e5e7eb;
+        border-top: 4px solid #6366f1;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        z-index: 9999;
+      }
+      
+      @keyframes spin {
+        0% { transform: translate(-50%, -50%) rotate(0deg); }
+        100% { transform: translate(-50%, -50%) rotate(360deg); }
+      }
+      
+      /* Hide loading spinner when React app loads */
+      .app-loaded .loading-spinner {
+        display: none;
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-CwPmxGik.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DzuJK-y5.css">
+  </head>
+  <body>
+    <div id="root">
+      <!-- Loading spinner shown until React app loads -->
+      <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- Vite will inject the React app here -->
+  </body>
+</html>

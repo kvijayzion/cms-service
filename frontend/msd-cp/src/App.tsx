@@ -6,6 +6,7 @@ import VideoPlayer from './components/VideoPlayer';
 import RightPanel from './components/RightPanel';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useStore } from './store/useStore';
+import { useBackendHealth, useContentApi, useNotifications } from './hooks/useApi';
 
 const App: React.FC = () => {
   const {
@@ -15,6 +16,11 @@ const App: React.FC = () => {
     login,
     sidebarCollapsed
   } = useStore();
+
+  // Backend integration hooks
+  const { isHealthy, lastChecked } = useBackendHealth();
+  const { loading: contentLoading, error: contentError } = useContentApi();
+  const { isConnected: notificationsConnected } = useNotifications();
 
   // Initialize sample data
   useEffect(() => {
@@ -165,25 +171,51 @@ const App: React.FC = () => {
                   <span className="opacity-75">v1.0.0</span>
                 </div>
 
-                {/* Build Status */}
+                {/* Backend Status */}
                 <div className={`flex items-center space-x-1 px-2 py-1 rounded-full ${
                   isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
                 }`}>
                   <div className="relative">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <div className="absolute inset-0 w-2 h-2 bg-green-400 rounded-full animate-ping opacity-75"></div>
-                    <div className="absolute inset-0 w-2 h-2 bg-green-300 rounded-full animate-pulse opacity-50"
-                         style={{
-                           boxShadow: '0 0 6px rgba(34, 197, 94, 0.6), 0 0 12px rgba(34, 197, 94, 0.4)'
-                         }}>
-                    </div>
+                    <div className={`w-2 h-2 rounded-full ${
+                      isHealthy === true ? 'bg-green-500 animate-pulse' :
+                      isHealthy === false ? 'bg-red-500 animate-pulse' :
+                      'bg-yellow-500 animate-pulse'
+                    }`}></div>
+                    {isHealthy === true && (
+                      <>
+                        <div className="absolute inset-0 w-2 h-2 bg-green-400 rounded-full animate-ping opacity-75"></div>
+                        <div className="absolute inset-0 w-2 h-2 bg-green-300 rounded-full animate-pulse opacity-50"
+                             style={{
+                               boxShadow: '0 0 6px rgba(34, 197, 94, 0.6), 0 0 12px rgba(34, 197, 94, 0.4)'
+                             }}>
+                        </div>
+                      </>
+                    )}
                   </div>
                   <span className={`text-xs font-medium ${
                     isDarkMode ? 'text-gray-400' : 'text-gray-600'
                   }`}>
-                    Live
+                    {isHealthy === true ? 'Backend Online' :
+                     isHealthy === false ? 'Backend Offline' :
+                     'Checking...'}
                   </span>
                 </div>
+
+                {/* Notifications Status */}
+                {isLoggedIn && (
+                  <div className={`flex items-center space-x-1 px-2 py-1 rounded-full ${
+                    isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full ${
+                      notificationsConnected ? 'bg-blue-500 animate-pulse' : 'bg-gray-500'
+                    }`}></div>
+                    <span className={`text-xs font-medium ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      {notificationsConnected ? 'Live Updates' : 'Offline'}
+                    </span>
+                  </div>
+                )}
               </div>
             </footer>
           </>

@@ -2,11 +2,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Package, Star, Check, ShoppingCart,
   MessageCircle, Send,
-  Heart, Plus, Minus, CreditCard, Receipt, Search, Filter
+  Heart, Plus, Minus, CreditCard, Receipt, Search, Filter, Server, Info, User, Eye,
+  Clock, Share2, TrendingUp, Hash, CheckCircle, Play, Calendar
 } from 'lucide-react';
 import ReelsSection from './ReelsSection';
 import { useStore } from '../store/useStore';
 import { formatTimeAgo } from '../utils/formatTime';
+import { useBackendHealth, useContentApi } from '../hooks/useApi';
+import BackendStatus from './BackendStatus';
+import LoadingIndicator, { InlineLoader } from './LoadingIndicator';
+import ApiTestPanel from './ApiTestPanel';
+import { formatVideoNumber, formatTimeAgo as formatVideoTimeAgo } from '../types/video';
 
 interface RightPanelProps {
   isDarkMode: boolean;
@@ -176,6 +182,10 @@ const RightPanel: React.FC<RightPanelProps> = ({ isDarkMode }) => {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
 
+  // Backend integration hooks
+  const { isHealthy } = useBackendHealth();
+  const { loading: contentLoading, error: contentError, loadAllContents, searchContents } = useContentApi();
+
   // Dynamic products based on current video
   const getProductsForVideo = (videoId: string) => {
     const productSets = {
@@ -299,6 +309,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ isDarkMode }) => {
     { id: 'package', label: 'Package', icon: Package },
     { id: 'reels', label: 'Reels', icon: Star },
     { id: 'comments', label: 'Comments', icon: MessageCircle },
+    { id: 'backend', label: 'Backend', icon: Server },
   ];
 
   // Auto-scroll to bottom when new comments are added
@@ -513,79 +524,143 @@ const RightPanel: React.FC<RightPanelProps> = ({ isDarkMode }) => {
         {activeTab === 'package' && (
           <div className="h-full p-6 overflow-y-auto">
             <div className="space-y-6">
-              {/* Section 1: Video Info & Engagement */}
-              <div className={`p-4 rounded-xl transition-all duration-300 ${
-                isDarkMode ? 'bg-gray-700' : 'bg-gray-100 border border-gray-200'
-              } ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
+              {/* Section 1: Video Information */}
+              <div className={`rounded-2xl ${
+                isDarkMode
+                  ? 'bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700'
+                  : 'bg-gradient-to-br from-white to-gray-50 border border-gray-200 shadow-lg'
+              } ${isLoading ? 'opacity-50' : 'opacity-100'}`}
+              style={{
+                boxShadow: isDarkMode
+                  ? '0 8px 32px rgba(0, 0, 0, 0.3)'
+                  : '0 8px 32px rgba(0, 0, 0, 0.1)'
+              }}>
                 {isLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                  <div className="flex items-center justify-center py-12">
+                    <div className="relative">
+                      <div className="animate-spin rounded-full h-10 w-10 border-2 border-purple-500 border-t-transparent"></div>
+                      <Play className="absolute inset-0 m-auto w-4 h-4 text-purple-500" />
+                    </div>
                   </div>
                 ) : (
-                  <div className="flex space-x-4">
-                    {/* Left side - Square image */}
-                    <div className="flex-shrink-0">
-                      <img
-                        src={currentVideo?.thumbnail || 'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop'}
-                        alt="Video thumbnail"
-                        className="w-20 h-20 object-cover rounded-lg"
-                      />
-                    </div>
-
-                    {/* Right side - Content */}
-                    <div className="flex-1 min-w-0">
-                      <h2 className={`text-lg font-bold mb-1 ${
-                        isDarkMode ? 'text-white' : 'text-gray-900'
-                      }`}>
-                        {currentVideo?.title || 'Amazing Sunset Views'}
-                      </h2>
-
-                      <p className={`text-xs mb-3 line-clamp-2 ${
-                        isDarkMode ? 'text-gray-300' : 'text-gray-600'
-                      }`}>
-                        {currentVideo?.description || 'Experience breathtaking moments captured in stunning detail.'}
-                      </p>
-
-                      {/* Engagement Metrics */}
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className="flex items-center space-x-1">
-                          <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
-                          <span className={`text-xs font-medium ${
-                            isDarkMode ? 'text-white' : 'text-gray-900'
-                          }`}>
-                            {currentVideo?.views?.toLocaleString() || '12.5K'} views
-                          </span>
+                  <div className="p-5 space-y-2">
+                    {/* Header Section - Compact */}
+                    <div className="flex items-start space-x-3">
+                      {/* Video Thumbnail */}
+                      <div className="relative flex-shrink-0 group">
+                        <img
+                          src={currentVideo?.thumbnail || 'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop'}
+                          alt="Video thumbnail"
+                          className="w-20 h-20 object-cover rounded-lg transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                          <Play className="w-5 h-5 text-white" />
                         </div>
+                      </div>
 
-                        <div className="flex items-center space-x-1">
-                          <span className={`text-xs ${
-                            isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                          }`}>
-                            {currentVideo?.likes?.toLocaleString() || '1.2K'} likes
-                          </span>
-                        </div>
+                      {/* Video Title & Author */}
+                      <div className="flex-1 min-w-0">
+                        <h2 className={`text-base font-bold leading-tight mb-2 line-clamp-2 ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          {currentVideo?.title || 'Amazing Sunset Views'}
+                        </h2>
 
-                        {(currentVideo?.views && currentVideo.views > 1000000) && (
-                          <div className="bg-gradient-to-r from-pink-500 to-purple-500 rounded-full px-2 py-0.5">
-                            <span className="text-white text-xs font-bold">🔥 TRENDING</span>
+                        {/* Author Information with Engagement Metrics */}
+                        {currentVideo?.creator && (
+                          <div className="space-y-2">
+                            {/* Author Info */}
+                            <div className="flex items-center space-x-2">
+                              <span className={`text-sm font-medium ${
+                                isDarkMode ? 'text-white' : 'text-gray-900'
+                              }`}>
+                                {currentVideo.creator.name}
+                              </span>
+                              {currentVideo.creator.verified && (
+                                <CheckCircle className="w-3 h-3 text-blue-500" />
+                              )}
+                              <span className={`text-xs ${
+                                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
+                                • {formatVideoNumber(currentVideo.creator.followers || 0)} followers
+                              </span>
+                            </div>
+
+                            {/* Engagement Metrics with Icons */}
+                            <div className="flex items-center space-x-4">
+                              <div className="flex items-center space-x-1">
+                                <Eye className="w-3 h-3 text-purple-500" />
+                                <span className={`text-xs font-medium ${
+                                  isDarkMode ? 'text-purple-400' : 'text-purple-600'
+                                }`}>
+                                  {formatVideoNumber(currentVideo?.views || 0)}
+                                </span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <Heart className="w-3 h-3 text-red-500" />
+                                <span className={`text-xs font-medium ${
+                                  isDarkMode ? 'text-red-400' : 'text-red-600'
+                                }`}>
+                                  {formatVideoNumber(currentVideo?.likes || 0)}
+                                </span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <MessageCircle className="w-3 h-3 text-blue-500" />
+                                <span className={`text-xs font-medium ${
+                                  isDarkMode ? 'text-blue-400' : 'text-blue-600'
+                                }`}>
+                                  {formatVideoNumber(currentVideo?.comments || 0)}
+                                </span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <Calendar className="w-3 h-3 text-gray-500" />
+                                <span className={`text-xs ${
+                                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                                }`}>
+                                  {formatVideoTimeAgo(currentVideo?.createdAt)}
+                                </span>
+                              </div>
+                              {(currentVideo?.views && currentVideo.views > 1000000) && (
+                                <div className="flex items-center space-x-1 bg-gradient-to-r from-orange-500 to-red-500 text-white px-1.5 py-0.5 rounded text-xs font-bold">
+                                  <TrendingUp className="w-2.5 h-2.5" />
+                                  <span>HOT</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
-
-                      {/* Hashtags */}
-                      <div className="flex flex-wrap gap-1">
-                        {(currentVideo?.tags || ['sunset', 'nature', 'peaceful']).slice(0, 3).map((tag) => (
-                          <span
-                            key={tag}
-                            className={`px-2 py-0.5 rounded-full text-xs ${
-                              isDarkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-700'
-                            }`}
-                          >
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
                     </div>
+
+                    {/* Description - Outside author section, no extra space */}
+                    <div className={`text-sm leading-relaxed ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      <p className="line-clamp-2">
+                        {currentVideo?.description || 'Experience breathtaking moments captured in stunning detail. This video showcases the beauty of nature in its purest form.'}
+                      </p>
+                    </div>
+
+                    {/* Tags - Simple Row */}
+                    {(currentVideo?.tags && currentVideo.tags.length > 0) && (
+                      <div className="flex items-center space-x-2">
+                        <Hash className="w-3 h-3 text-gray-500 flex-shrink-0" />
+                        <div className="flex flex-wrap gap-1">
+                          {currentVideo.tags.slice(0, 3).map((tag) => (
+                            <span
+                              key={tag}
+                              className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                isDarkMode
+                                  ? 'bg-gray-600/50 text-gray-300'
+                                  : 'bg-gray-200 text-gray-600'
+                              }`}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -774,6 +849,153 @@ const RightPanel: React.FC<RightPanelProps> = ({ isDarkMode }) => {
           </div>
         )}
 
+        {activeTab === 'backend' && (
+          <div className="h-full p-6 overflow-y-auto space-y-6">
+            {/* Backend Status */}
+            <BackendStatus isDarkMode={isDarkMode} />
+
+            {/* API Integration Tests */}
+            <ApiTestPanel isDarkMode={isDarkMode} />
+
+            {/* Content Loading Status */}
+            <div className={`p-4 rounded-xl transition-all duration-500 ${
+              isDarkMode
+                ? 'bg-gray-800/30 border border-gray-700/30'
+                : 'bg-white/30 border border-gray-200/30'
+            }`}
+              style={{
+                boxShadow: isDarkMode
+                  ? `
+                    8px 8px 20px rgba(0, 0, 0, 0.3),
+                    -8px -8px 20px rgba(255, 255, 255, 0.02),
+                    inset 4px 4px 10px rgba(0, 0, 0, 0.2),
+                    inset -4px -4px 10px rgba(255, 255, 255, 0.03)
+                  `
+                  : `
+                    8px 8px 20px rgba(0, 0, 0, 0.08),
+                    -8px -8px 20px rgba(255, 255, 255, 0.8),
+                    inset 4px 4px 10px rgba(0, 0, 0, 0.03),
+                    inset -4px -4px 10px rgba(255, 255, 255, 0.8)
+                  `
+              }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h3 className={`text-sm font-semibold ${
+                  isDarkMode ? 'text-gray-200' : 'text-gray-800'
+                }`}>
+                  Content API
+                </h3>
+                {contentLoading && <InlineLoader isDarkMode={isDarkMode} />}
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className={`text-xs ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    Status:
+                  </span>
+                  <span className={`text-xs font-medium ${
+                    contentError ? 'text-red-500' :
+                    contentLoading ? 'text-yellow-500' : 'text-green-500'
+                  }`}>
+                    {contentError ? 'Error' : contentLoading ? 'Loading' : 'Ready'}
+                  </span>
+                </div>
+
+                {contentError && (
+                  <div className={`text-xs p-2 rounded ${
+                    isDarkMode ? 'bg-red-900/20 text-red-400' : 'bg-red-100 text-red-600'
+                  }`}>
+                    {contentError}
+                  </div>
+                )}
+
+                <div className="flex space-x-2 mt-3">
+                  <button
+                    onClick={loadAllContents}
+                    disabled={contentLoading}
+                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-300 ${
+                      isDarkMode
+                        ? 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 disabled:opacity-50'
+                        : 'bg-blue-100 text-blue-600 hover:bg-blue-200 disabled:opacity-50'
+                    }`}
+                  >
+                    Reload Content
+                  </button>
+                  <button
+                    onClick={() => searchContents('test')}
+                    disabled={contentLoading}
+                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-300 ${
+                      isDarkMode
+                        ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30 disabled:opacity-50'
+                        : 'bg-green-100 text-green-600 hover:bg-green-200 disabled:opacity-50'
+                    }`}
+                  >
+                    Test Search
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* API Endpoints Status */}
+            <div className={`p-4 rounded-xl transition-all duration-500 ${
+              isDarkMode
+                ? 'bg-gray-800/30 border border-gray-700/30'
+                : 'bg-white/30 border border-gray-200/30'
+            }`}
+              style={{
+                boxShadow: isDarkMode
+                  ? `
+                    8px 8px 20px rgba(0, 0, 0, 0.3),
+                    -8px -8px 20px rgba(255, 255, 255, 0.02),
+                    inset 4px 4px 10px rgba(0, 0, 0, 0.2),
+                    inset -4px -4px 10px rgba(255, 255, 255, 0.03)
+                  `
+                  : `
+                    8px 8px 20px rgba(0, 0, 0, 0.08),
+                    -8px -8px 20px rgba(255, 255, 255, 0.8),
+                    inset 4px 4px 10px rgba(0, 0, 0, 0.03),
+                    inset -4px -4px 10px rgba(255, 255, 255, 0.8)
+                  `
+              }}
+            >
+              <h3 className={`text-sm font-semibold mb-3 ${
+                isDarkMode ? 'text-gray-200' : 'text-gray-800'
+              }`}>
+                API Endpoints
+              </h3>
+
+              <div className="space-y-2 text-xs">
+                {[
+                  { name: 'Health Check', endpoint: '/actuator/health', status: isHealthy },
+                  { name: 'Content API', endpoint: '/api/contents', status: isHealthy },
+                  { name: 'gRPC Server', endpoint: 'localhost:9091', status: isHealthy },
+                  { name: 'WebSocket', endpoint: '/ws/video-stream', status: isHealthy },
+                ].map((api, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <span className={`${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      {api.name}:
+                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className={`font-mono text-xs ${
+                        isDarkMode ? 'text-gray-500' : 'text-gray-500'
+                      }`}>
+                        {api.endpoint}
+                      </span>
+                      <div className={`w-2 h-2 rounded-full ${
+                        api.status === true ? 'bg-green-500' :
+                        api.status === false ? 'bg-red-500' : 'bg-yellow-500'
+                      }`} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

@@ -1,0 +1,270 @@
+# API Gateway Application Configuration
+# Modern Config Data API approach - Single file configuration
+# All tunable values come from ZooKeeper via spring.config.import
+
+spring:
+  application:
+    name: api-gateway
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+  # Config Data API - Import from ZooKeeper (consolidated) - COMMENTED OUT for now
+  # config:
+  #   import:
+  #     - "optional:zookeeper:${ZK_HOSTS:zookeeper.mysillydreams-dev:2181}/${spring.application.name}/${spring.profiles.active}"
+
+  # ZooKeeper Configuration - COMMENTED OUT for now
+  # cloud:
+  #   zookeeper:
+  #     connect-string: ${ZK_HOSTS:zookeeper.mysillydreams-dev:2181}
+  #     config:
+  #       enabled: true
+  #       root: /config
+  #       default-context: ${spring.application.name}
+  #       profile-separator: ','
+  #       fail-fast: ${ZK_FAIL_FAST:false}  # Allow local dev without ZK
+  #       watcher:
+  #         enabled: true  # Enable auto-refresh
+  #     discovery:
+  #       enabled: false
+  #       register: false
+
+    # Gateway Global CORS (fallback - prefer ZooKeeper config)
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: ${CORS_ALLOWED_ORIGINS:https://*.mysillydreams.com}
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+              - HEAD
+            allowedHeaders:
+              - "Authorization"
+              - "Content-Type"
+              - "X-Correlation-ID"
+              - "X-XSRF-TOKEN"
+            allowCredentials: true
+            maxAge: 3600
+
+
+    # Configuration refresh support
+    refresh:
+      enabled: true
+
+  # Security Configuration
+  security:
+    csrf:
+      enabled: ${CSRF_ENABLED:false}
+
+# Gateway Configuration - Static structure only
+gateway:
+  # All values below come from ZooKeeper with these fallbacks
+  csrf:
+    cookie-name: ${CSRF_COOKIE_NAME:XSRF-TOKEN}
+    header-name: ${CSRF_HEADER_NAME:X-XSRF-TOKEN}
+    cookie-path: ${CSRF_COOKIE_PATH:/}
+    cookie-max-age: ${CSRF_COOKIE_MAX_AGE:3600}
+    cookie-secure: ${CSRF_COOKIE_SECURE:true}
+    cookie-same-site: ${CSRF_COOKIE_SAME_SITE:Lax}
+
+  timeout:
+    global-request-timeout: ${GLOBAL_REQUEST_TIMEOUT:PT30S}
+    per-route-timeout: ${PER_ROUTE_TIMEOUT:PT15S}
+
+  # Fallback Configuration - All from ZooKeeper (ISO-8601 durations)
+  fallback:
+    retry-after: ${FALLBACK_RETRY_AFTER:PT30S}
+    retry-after-message: ${FALLBACK_RETRY_AFTER_MESSAGE:30 seconds}
+    support-contact: ${FALLBACK_SUPPORT_CONTACT:support@mysillydreams.com}
+    expose-details: ${FALLBACK_EXPOSE_DETAILS:false}
+    # Externalized message strings
+    error-message: ${FALLBACK_ERROR_MESSAGE:Service Unavailable}
+    unavailable-suffix: ${FALLBACK_UNAVAILABLE_SUFFIX:is temporarily unavailable}
+
+  routes:
+    auth-service:
+      uri: ${AUTH_SERVICE_URI:lb://auth-service}
+      fallback-uri: ${AUTH_FALLBACK_URI:forward:/fallback/auth}
+    user-service:
+      uri: ${USER_SERVICE_URI:lb://user-service}
+      fallback-uri: ${USER_FALLBACK_URI:forward:/fallback/user}
+    admin-server:
+      uri: ${ADMIN_SERVER_URI:lb://admin-server}
+      fallback-uri: ${ADMIN_FALLBACK_URI:forward:/fallback/admin}
+    config-service:
+      uri: ${CONFIG_SERVICE_URI:lb://zookeeper-service}
+      fallback-uri: ${CONFIG_FALLBACK_URI:forward:/fallback/config}
+    default-service:
+      uri: ${DEFAULT_SERVICE_URI:lb://default-backend}
+      fallback-uri: ${DEFAULT_FALLBACK_URI:forward:/fallback/default}
+      order: 999  # Lowest priority
+
+# Rate Limiting Configuration - All from ZooKeeper
+rate-limiter:
+  auth:
+    replenish-rate: ${AUTH_RATE_REPLENISH:5}
+    burst-capacity: ${AUTH_RATE_BURST:10}
+    requested-tokens: ${AUTH_RATE_TOKENS:1}
+  api:
+    replenish-rate: ${API_RATE_REPLENISH:100}
+    burst-capacity: ${API_RATE_BURST:200}
+    requested-tokens: ${API_RATE_TOKENS:1}
+  admin:
+    replenish-rate: ${ADMIN_RATE_REPLENISH:50}
+    burst-capacity: ${ADMIN_RATE_BURST:100}
+    requested-tokens: ${ADMIN_RATE_TOKENS:1}
+  default:
+    replenish-rate: ${DEFAULT_RATE_REPLENISH:10}
+    burst-capacity: ${DEFAULT_RATE_BURST:20}
+    requested-tokens: ${DEFAULT_RATE_TOKENS:1}
+
+# Security Headers Configuration - All from ZooKeeper
+security:
+  headers:
+    csp:
+      enabled: ${CSP_ENABLED:true}
+      nonce-length: ${CSP_NONCE_LENGTH:32}
+    hsts:
+      enabled: ${HSTS_ENABLED:true}
+      max-age: ${HSTS_MAX_AGE:31536000}
+      include-subdomains: ${HSTS_INCLUDE_SUBDOMAINS:true}
+      preload: ${HSTS_PRELOAD:true}
+    frame-options: ${FRAME_OPTIONS:DENY}
+    content-type-options: ${CONTENT_TYPE_OPTIONS:nosniff}
+    referrer-policy: ${REFERRER_POLICY:strict-origin-when-cross-origin}
+    cross-origin-embedder-policy: ${COEP:require-corp}
+    cross-origin-opener-policy: ${COOP:same-origin}
+    cross-origin-resource-policy: ${CORP:same-origin}
+
+# Retry Configuration - All from ZooKeeper
+retry:
+  auth-service:
+    max-attempts: ${AUTH_RETRY_MAX:3}
+    backoff-delay: ${AUTH_RETRY_DELAY:1000}
+    max-delay: ${AUTH_RETRY_MAX_DELAY:5000}
+  user-service:
+    max-attempts: ${USER_RETRY_MAX:3}
+    backoff-delay: ${USER_RETRY_DELAY:1000}
+    max-delay: ${USER_RETRY_MAX_DELAY:5000}
+  admin-service:
+    max-attempts: ${ADMIN_RETRY_MAX:2}
+    backoff-delay: ${ADMIN_RETRY_DELAY:1000}
+    max-delay: ${ADMIN_RETRY_MAX_DELAY:3000}
+
+# Server Configuration
+server:
+  port: ${SERVER_PORT:8080}
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
+
+# Management and Monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,gateway,refresh,env,configprops
+  endpoint:
+    health:
+      show-details: when-authorized
+    refresh:
+      enabled: true
+    env:
+      enabled: true
+    configprops:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      instance: ${spring.cloud.client.hostname:unknown}
+
+# Logging Configuration
+logging:
+  level:
+    root: ${ROOT_LOG_LEVEL:INFO}
+    com.mysillydreams.gateway: ${GATEWAY_LOG_LEVEL:INFO}
+    org.springframework.cloud.gateway: ${GATEWAY_FRAMEWORK_LOG_LEVEL:INFO}
+    org.springframework.cloud.zookeeper: ${ZK_CLIENT_LOG_LEVEL:INFO}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{traceId:-},%X{spanId:-}] %logger{36} - %msg%n"
+
+---
+# Local Development Profile - Permissive CORS Configuration
+spring:
+  config:
+    activate:
+      on-profile: local
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "http://localhost:*"
+              - "https://localhost:*"
+              - "https://*.mysillydreams.com"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+              - HEAD
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+            maxAge: 3600
+
+# Local Gateway Configuration
+gateway:
+  fallback:
+    expose-details: true  # Allow error details in local development
+
+---
+# Production Profile - Tightened CORS Configuration
+spring:
+  config:
+    activate:
+      on-profile: prod
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "https://*.mysillydreams.com"
+              - "https://mysillydreams.com"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+              - HEAD
+            allowedHeaders:
+              - "Authorization"
+              - "Content-Type"
+              - "X-Correlation-ID"
+              - "X-XSRF-TOKEN"
+            allowCredentials: true
+            maxAge: 3600
+
+# Production Gateway Configuration
+gateway:
+  fallback:
+    expose-details: false  # Never expose internal errors in production

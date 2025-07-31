@@ -1,20 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  Heart, Share, MoreHorizontal, Play, Pause,
-  Volume2, VolumeX, Maximize, Loader2, Flag, Bookmark, ExternalLink
+  MoreHorizontal, Play, Pause,
+  Volume2, VolumeX, Maximize, Loader2, Settings
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useSwipeGestures } from '../hooks/useSwipeGestures';
 import { useSpring, animated } from '@react-spring/web';
-
-interface Video {
-  id: string;
-  url: string;
-  title: string;
-  description: string;
-  likes: number;
-  comments: number;
-}
+import VideoInfoPanel from './VideoInfoPanel';
+import { useContentApi } from '../hooks/useApi';
+import { Video, SafeVideo, isValidVideo } from '../types/video';
 
 interface VideoPlayerProps {
   isDarkMode: boolean;
@@ -27,8 +21,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ isDarkMode }) => {
   const [isBuffering, setIsBuffering] = useState(false);
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const [showBoundaryMessage, setShowBoundaryMessage] = useState<string | null>(null);
@@ -37,6 +29,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ isDarkMode }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartY, setDragStartY] = useState<number | null>(null);
   const [containerHeight, setContainerHeight] = useState(0);
+  const [isProgressDragging, setIsProgressDragging] = useState(false);
+  const [showProgressBar, setShowProgressBar] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -162,18 +156,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ isDarkMode }) => {
     setQuality,
     toggleFullscreen,
     setShowVideoControls,
-    likeVideo,
-    bookmarkVideo,
     addToViewHistory,
     updateWatchTime
   } = useStore();
 
-  // Initialize videos - force initialization to ensure all 5 videos are loaded
+  // Use API hook for loading content
+  const { loading: contentLoading, error: contentError } = useContentApi();
+
+  // Fallback sample videos for development/demo purposes only when no API data is available
   useEffect(() => {
-    // Always initialize videos to ensure we have all 5 videos
-    const sampleVideos: Video[] = [
+    // Only use sample data if no videos are loaded and there's no content loading
+    if (videos.length === 0 && !contentLoading && contentError) {
+      console.warn('Using fallback sample data due to API error:', contentError);
+      const sampleVideos: Video[] = [
         {
-          id: '1',
+          id: 'sample-1',
           url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
           title: 'Beautiful Sunset',
           description: 'A stunning sunset over the mountains with vibrant colors painting the sky.',
@@ -184,7 +181,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ isDarkMode }) => {
           duration: 120,
           thumbnail: 'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=300&h=400&fit=crop',
           creator: {
-            id: '1',
+            id: 'creator-1',
             name: 'Nature Lover',
             email: 'nature@example.com',
             avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
@@ -194,124 +191,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ isDarkMode }) => {
             videos: 120,
             verified: true
           },
-          createdAt: new Date().toISOString(),
+          createdAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
           isLiked: false,
           isBookmarked: false,
           tags: ['nature', 'sunset', 'mountains']
-        },
-        {
-          id: '2',
-          url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-          title: 'Ocean Waves',
-          description: 'Relaxing ocean waves crashing against the shore on a peaceful evening.',
-          likes: 2567,
-          comments: 156,
-          shares: 78,
-          views: 25600,
-          duration: 180,
-          thumbnail: 'https://images.pexels.com/photos/1181677/pexels-photo-1181677.jpeg?auto=compress&cs=tinysrgb&w=300&h=400&fit=crop',
-          creator: {
-            id: '2',
-            name: 'Ocean Explorer',
-            email: 'ocean@example.com',
-            avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
-            followers: 22000,
-            following: 800,
-            likes: 75000,
-            videos: 200,
-            verified: true
-          },
-          createdAt: new Date().toISOString(),
-          isLiked: false,
-          isBookmarked: false,
-          tags: ['ocean', 'waves', 'relaxing']
-        },
-        {
-          id: '3',
-          url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-          title: 'City Lights',
-          description: 'Stunning city skyline at night with vibrant lights and bustling energy.',
-          likes: 3456,
-          comments: 234,
-          shares: 123,
-          views: 45600,
-          duration: 150,
-          thumbnail: 'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=300&h=400&fit=crop',
-          creator: {
-            id: '3',
-            name: 'Urban Photographer',
-            email: 'urban@example.com',
-            avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
-            followers: 18500,
-            following: 650,
-            likes: 62000,
-            videos: 85,
-            verified: true
-          },
-          createdAt: new Date().toISOString(),
-          isLiked: false,
-          isBookmarked: false,
-          tags: ['city', 'lights', 'urban', 'night']
-        },
-        {
-          id: '4',
-          url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-          title: 'Mountain Adventure',
-          description: 'Epic mountain hiking adventure with breathtaking views and challenging trails.',
-          likes: 4789,
-          comments: 312,
-          shares: 189,
-          views: 67800,
-          duration: 240,
-          thumbnail: 'https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg?auto=compress&cs=tinysrgb&w=300&h=400&fit=crop',
-          creator: {
-            id: '4',
-            name: 'Adventure Seeker',
-            email: 'adventure@example.com',
-            avatar: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
-            followers: 32000,
-            following: 1200,
-            likes: 95000,
-            videos: 156,
-            verified: true
-          },
-          createdAt: new Date().toISOString(),
-          isLiked: false,
-          isBookmarked: false,
-          tags: ['mountain', 'adventure', 'hiking', 'nature']
-        },
-        {
-          id: '5',
-          url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-          title: 'Forest Meditation',
-          description: 'Peaceful forest sounds and scenery perfect for meditation and relaxation.',
-          likes: 2134,
-          comments: 167,
-          shares: 89,
-          views: 34500,
-          duration: 300,
-          thumbnail: 'https://images.pexels.com/photos/1181695/pexels-photo-1181695.jpeg?auto=compress&cs=tinysrgb&w=300&h=400&fit=crop',
-          creator: {
-            id: '5',
-            name: 'Zen Master',
-            email: 'zen@example.com',
-            avatar: 'https://images.pexels.com/photos/1181519/pexels-photo-1181519.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop',
-            followers: 28000,
-            following: 450,
-            likes: 78000,
-            videos: 203,
-            verified: true
-          },
-          createdAt: new Date().toISOString(),
-          isLiked: false,
-          isBookmarked: false,
-          tags: ['forest', 'meditation', 'peaceful', 'zen']
         }
-    ];
-    useStore.getState().setVideos(sampleVideos);
-  }, []); // Force initialization on component mount
+      ];
+      useStore.getState().setVideos(sampleVideos);
+    }
+  }, [videos.length, contentLoading, contentError]);
 
-  const currentVideo = videos[currentVideoIndex] || null;
+  // Safe access to current video with error handling
+  const currentVideo: SafeVideo = videos[currentVideoIndex] || null;
+  const nextVideo: SafeVideo = currentVideoIndex < videos.length - 1 ? videos[currentVideoIndex + 1] : null;
 
   // Initialize autoplay on component mount
   useEffect(() => {
@@ -598,21 +490,63 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ isDarkMode }) => {
   };
 
   const handleProgressClick = (e: React.MouseEvent) => {
-    if (!progressRef.current || !videoRef.current) return;
+    if (!progressRef.current || !videoRef.current || isProgressDragging) return;
 
     const rect = progressRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
-    const percentage = clickX / rect.width;
+    const percentage = Math.max(0, Math.min(1, clickX / rect.width));
     const newTime = percentage * duration;
 
     videoRef.current.currentTime = newTime;
   };
+
+  const handleProgressMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsProgressDragging(true);
+    handleProgressClick(e);
+  };
+
+  const handleProgressMouseMove = (e: MouseEvent) => {
+    if (!isProgressDragging || !progressRef.current || !videoRef.current) return;
+
+    const rect = progressRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+    const newTime = percentage * duration;
+
+    videoRef.current.currentTime = newTime;
+  };
+
+  const handleProgressMouseUp = () => {
+    setIsProgressDragging(false);
+  };
+
+  // Add global mouse event listeners for progress dragging
+  useEffect(() => {
+    if (isProgressDragging) {
+      document.addEventListener('mousemove', handleProgressMouseMove);
+      document.addEventListener('mouseup', handleProgressMouseUp);
+
+      return () => {
+        document.removeEventListener('mousemove', handleProgressMouseMove);
+        document.removeEventListener('mouseup', handleProgressMouseUp);
+      };
+    }
+  }, [isProgressDragging, duration]);
 
   const handleVolumeChange = (newVolume: number) => {
     setVolume(newVolume);
     if (videoRef.current) {
       videoRef.current.volume = newVolume;
     }
+  };
+
+  // Format time in MM:SS format
+  const formatTime = (timeInSeconds: number): string => {
+    if (isNaN(timeInSeconds)) return '0:00';
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   const handleSpeedChange = (speed: number) => {
@@ -626,12 +560,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ isDarkMode }) => {
   const handleQualityChange = (newQuality: string) => {
     setQuality(newQuality);
     setShowQualityMenu(false);
-  };
-
-  const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   // Custom fullscreen handler
@@ -651,17 +579,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ isDarkMode }) => {
     }
   };
 
-  const shareOptions = [
-    { name: 'Twitter', icon: '🐦', url: 'https://twitter.com/intent/tweet?url=' },
-    { name: 'Facebook', icon: '📘', url: 'https://www.facebook.com/sharer/sharer.php?u=' },
-    { name: 'WhatsApp', icon: '💬', url: 'https://wa.me/?text=' },
-    { name: 'Copy Link', icon: '🔗', url: '' },
-  ];
-
-  if (!currentVideo) {
+  // Show loading state for content loading or invalid video data
+  if (contentLoading || !isValidVideo(currentVideo)) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-400 mx-auto mb-2" />
+          <p className="text-sm text-gray-500">
+            {contentLoading ? 'Loading videos...' : 'No valid video data available'}
+          </p>
+          {contentError && (
+            <p className="text-xs text-red-500 mt-1">
+              Error: {contentError}
+            </p>
+          )}
+        </div>
       </div>
     );
   }
@@ -712,7 +644,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ isDarkMode }) => {
         </animated.div>
 
         {/* Next Video (Preview during drag) */}
-        {currentVideoIndex < videos.length - 1 && (
+        {nextVideo && (
           <animated.div
             style={{
               transform: springProps.nextY.to(y => `translateY(${y}px)`),
@@ -725,7 +657,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ isDarkMode }) => {
             }}
           >
             <video
-              src={videos[currentVideoIndex + 1].url}
+              src={nextVideo.url}
               className="w-full h-full object-cover cursor-pointer rounded-3xl"
               autoPlay
               loop
@@ -734,89 +666,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ isDarkMode }) => {
               preload="auto"
             />
 
-            {/* Next Video Right Side Actions */}
+
+
+            {/* Next Video Info - Enterprise Solution */}
             <animated.div
-              className="absolute right-4 bottom-20 flex flex-col space-y-6"
+              className="absolute bottom-0 left-0 right-0 pointer-events-none"
               style={{
-                zIndex: 2
+                zIndex: 5
               }}
             >
-              {/* Like Button */}
-              <button
-                onClick={() => likeVideo(videos[currentVideoIndex + 1].id)}
-                className="group relative flex flex-col items-center"
-              >
-                <Heart
-                  className={`w-6 h-6 transition-all duration-300 group-hover:scale-110 group-active:scale-95 ${
-                    videos[currentVideoIndex + 1].isLiked
-                      ? 'text-red-500 fill-red-500'
-                      : isDarkMode
-                        ? 'text-white'
-                        : 'text-white'
-                  }`}
-                />
-                <span className={`text-xs mt-1 block text-center transition-colors duration-300 ${
-                  isDarkMode ? 'text-white' : 'text-white'
-                }`}>
-                  {videos[currentVideoIndex + 1].likes.toLocaleString()}
-                </span>
-              </button>
-
-              {/* Bookmark Button */}
-              <button
-                onClick={() => bookmarkVideo(videos[currentVideoIndex + 1].id)}
-                className="group relative flex flex-col items-center"
-              >
-                <Bookmark className={`w-6 h-6 transition-all duration-300 group-hover:scale-110 group-active:scale-95 ${
-                  videos[currentVideoIndex + 1].isBookmarked
-                    ? 'text-yellow-500 fill-yellow-500'
-                    : isDarkMode ? 'text-white' : 'text-white'
-                }`} />
-              </button>
-
-              {/* Share Button */}
-              <button
-                onClick={() => setShowShareModal(true)}
-                className="group relative flex flex-col items-center"
-              >
-                <Share className={`w-6 h-6 transition-all duration-300 group-hover:scale-110 group-active:scale-95 ${
-                  isDarkMode ? 'text-white' : 'text-white'
-                }`} />
-                <span className={`text-xs mt-1 block text-center transition-colors duration-300 ${
-                  isDarkMode ? 'text-white' : 'text-white'
-                }`}>
-                  {videos[currentVideoIndex + 1].shares.toLocaleString()}
-                </span>
-              </button>
-
-              {/* Report Button */}
-              <button
-                onClick={() => setShowReportModal(true)}
-                className="group relative flex flex-col items-center"
-              >
-                <Flag className={`w-6 h-6 transition-all duration-300 group-hover:scale-110 group-active:scale-95 ${
-                  isDarkMode ? 'text-white' : 'text-white'
-                }`} />
-              </button>
-            </animated.div>
-
-            {/* Next Video Info */}
-            <animated.div
-              className="absolute bottom-4 left-4 right-20"
-              style={{
-                zIndex: 2
-              }}
-            >
-              <h3 className={`text-lg font-semibold mb-2 transition-colors duration-300 ${
-                isDarkMode ? 'text-white' : 'text-white'
-              }`}>
-                {videos[currentVideoIndex + 1].title}
-              </h3>
-              <p className={`text-sm leading-relaxed transition-colors duration-300 ${
-                isDarkMode ? 'text-gray-300' : 'text-gray-200'
-              }`}>
-                {videos[currentVideoIndex + 1].description}
-              </p>
+              <VideoInfoPanel
+                video={nextVideo}
+                isNext={true}
+                isDarkMode={isDarkMode}
+                className="pointer-events-auto"
+                onTitleClick={() => console.log('Next video title clicked')}
+                onDescriptionClick={() => console.log('Next video description clicked')}
+              />
             </animated.div>
           </animated.div>
         )}
@@ -886,24 +752,54 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ isDarkMode }) => {
           </div>
         )}
 
-        {/* Progress Bar at Bottom - Hidden by default, shown on hover/drag */}
-        <div className="absolute bottom-0 left-0 right-0 group" style={{ zIndex: 10 }}>
-          <div
-            ref={progressRef}
-            className="w-full h-1 bg-white/20 cursor-pointer transition-all duration-300 group-hover:h-2"
-            onClick={handleProgressClick}
-            onMouseEnter={() => setShowVideoControls(true)}
-            onMouseLeave={() => setShowVideoControls(false)}
-            style={{ clipPath: 'inset(0 0 0 0 round 24px)' }}
-          >
+        {/* Enhanced Progress Bar at Bottom */}
+        <div
+          className="absolute bottom-0 left-0 right-0 group"
+          style={{ zIndex: 10 }}
+          onMouseEnter={() => setShowProgressBar(true)}
+          onMouseLeave={() => !isProgressDragging && setShowProgressBar(false)}
+        >
+          {/* Hover area for easier interaction */}
+          <div className="w-full h-4 flex items-center cursor-pointer">
             <div
-              className="h-full bg-white transition-all duration-100 relative"
-              style={{ width: `${progress}%` }}
+              ref={progressRef}
+              className={`w-full transition-all duration-300 bg-white/20 rounded-full ${
+                showProgressBar || isProgressDragging ? 'h-2' : 'h-1'
+              }`}
+              onClick={handleProgressClick}
+              onMouseDown={handleProgressMouseDown}
             >
-              {/* Draggable dot - only visible on hover */}
-              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-grab active:cursor-grabbing" />
+              {/* Progress fill */}
+              <div
+                className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-100 relative"
+                style={{ width: `${progress}%` }}
+              >
+                {/* Draggable dot - visible on hover or drag */}
+                <div
+                  className={`absolute right-0 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg transition-all duration-300 cursor-grab active:cursor-grabbing ${
+                    showProgressBar || isProgressDragging ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
+                  }`}
+                  style={{
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+                  }}
+                />
+              </div>
+
+              {/* Buffer indicator (optional) */}
+              <div
+                className="absolute top-0 left-0 h-full bg-white/30 rounded-full"
+                style={{ width: `${Math.min(100, progress + 10)}%` }}
+              />
             </div>
           </div>
+
+          {/* Time display on hover */}
+          {(showProgressBar || isProgressDragging) && (
+            <div className="absolute -top-8 left-0 right-0 flex justify-between text-xs text-white/80 px-2">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+          )}
         </div>
 
         {/* Boundary Message */}
@@ -917,193 +813,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ isDarkMode }) => {
           </div>
         )}
 
-        {/* Current Video Right Side Actions */}
+
+
+        {/* Current Video Info - Enterprise Solution */}
         <animated.div
-          className="absolute right-4 bottom-20 flex flex-col space-y-6"
+          className="absolute bottom-0 left-0 right-0 pointer-events-none"
           style={{
             transform: springProps.currentY.to(y => `translateY(${y}px)`),
-            zIndex: 3
+            zIndex: 10
           }}
         >
-          {/* Like Button */}
-          <button
-            onClick={() => likeVideo(currentVideo.id)}
-            className="group relative flex flex-col items-center"
-          >
-            <Heart
-              className={`w-6 h-6 transition-all duration-300 group-hover:scale-110 group-active:scale-95 ${
-                currentVideo.isLiked
-                  ? 'text-red-500 fill-red-500'
-                  : isDarkMode
-                    ? 'text-white'
-                    : 'text-white'
-              }`}
-            />
-            <span className={`text-xs mt-1 block text-center transition-colors duration-300 ${
-              isDarkMode ? 'text-white' : 'text-white'
-            }`}>
-              {currentVideo.likes.toLocaleString()}
-            </span>
-          </button>
-
-          {/* Bookmark Button */}
-          <button
-            onClick={() => bookmarkVideo(currentVideo.id)}
-            className="group relative flex flex-col items-center"
-          >
-            <Bookmark className={`w-6 h-6 transition-all duration-300 group-hover:scale-110 group-active:scale-95 ${
-              currentVideo.isBookmarked
-                ? 'text-yellow-500 fill-yellow-500'
-                : isDarkMode ? 'text-white' : 'text-white'
-            }`} />
-          </button>
-
-          {/* Share Button */}
-          <button
-            onClick={() => setShowShareModal(true)}
-            className="group relative flex flex-col items-center"
-          >
-            <Share className={`w-6 h-6 transition-all duration-300 group-hover:scale-110 group-active:scale-95 ${
-              isDarkMode ? 'text-white' : 'text-white'
-            }`} />
-            <span className={`text-xs mt-1 block text-center transition-colors duration-300 ${
-              isDarkMode ? 'text-white' : 'text-white'
-            }`}>
-              {currentVideo.shares.toLocaleString()}
-            </span>
-          </button>
-
-          {/* Report Button */}
-          <button
-            onClick={() => setShowReportModal(true)}
-            className="group relative flex flex-col items-center"
-          >
-            <Flag className={`w-6 h-6 transition-all duration-300 group-hover:scale-110 group-active:scale-95 ${
-              isDarkMode ? 'text-white' : 'text-white'
-            }`} />
-          </button>
-        </animated.div>
-
-        {/* Current Video Info */}
-        <animated.div
-          className="absolute bottom-4 left-4 right-20"
-          style={{
-            transform: springProps.currentY.to(y => `translateY(${y}px)`),
-            zIndex: 3
-          }}
-        >
-          <h3 className={`text-lg font-semibold mb-2 transition-colors duration-300 ${
-            isDarkMode ? 'text-white' : 'text-white'
-          }`}>
-            {currentVideo.title}
-          </h3>
-          <p className={`text-sm leading-relaxed transition-colors duration-300 ${
-            isDarkMode ? 'text-gray-300' : 'text-gray-200'
-          }`}>
-            {currentVideo.description}
-          </p>
+          <VideoInfoPanel
+            video={currentVideo}
+            isDarkMode={isDarkMode}
+            className="pointer-events-auto"
+            onTitleClick={() => console.log('Title clicked')}
+            onDescriptionClick={() => console.log('Description clicked')}
+            onAuthorClick={() => console.log('Author clicked')}
+          />
         </animated.div>
 
 
 
-        {/* Share Modal */}
-        {showShareModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className={`w-96 p-6 rounded-3xl ${
-              isDarkMode ? 'bg-gray-800' : 'bg-white'
-            }`}>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className={`text-xl font-semibold ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>
-                  Share Video
-                </h3>
-                <button
-                  onClick={() => setShowShareModal(false)}
-                  className={`p-2 rounded-full ${
-                    isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                  }`}
-                >
-                  ×
-                </button>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                {shareOptions.map((option) => (
-                  <button
-                    key={option.name}
-                    onClick={() => {
-                      if (option.name === 'Copy Link') {
-                        navigator.clipboard.writeText(window.location.href);
-                      } else {
-                        window.open(option.url + encodeURIComponent(window.location.href));
-                      }
-                      setShowShareModal(false);
-                    }}
-                    className={`flex items-center space-x-3 p-4 rounded-2xl transition-all duration-300 hover:scale-105 ${
-                      isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'
-                    }`}
-                  >
-                    <span className="text-2xl">{option.icon}</span>
-                    <span className={`font-medium ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      {option.name}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Report Modal */}
-        {showReportModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className={`w-96 p-6 rounded-3xl ${
-              isDarkMode ? 'bg-gray-800' : 'bg-white'
-            }`}>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className={`text-xl font-semibold ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>
-                  Report Video
-                </h3>
-                <button
-                  onClick={() => setShowReportModal(false)}
-                  className={`p-2 rounded-full ${
-                    isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                  }`}
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {[
-                  'Inappropriate content',
-                  'Spam or misleading',
-                  'Harassment or bullying',
-                  'Copyright violation',
-                  'Other'
-                ].map((reason) => (
-                  <button
-                    key={reason}
-                    onClick={() => {
-                      // Handle report submission
-                      setShowReportModal(false);
-                    }}
-                    className={`w-full text-left p-3 rounded-xl transition-all duration-300 hover:scale-105 ${
-                      isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-                    }`}
-                  >
-                    {reason}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Right-Click Context Menu */}
         {showContextMenu && (
