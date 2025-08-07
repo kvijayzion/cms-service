@@ -80,7 +80,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDarkMode }) => {
             `
         }}
       >
-        <Zap className={`w-6 h-6 transition-all duration-300 ${
+        <Zap className={`w-5 h-5 transition-all duration-300 ${
           isDarkMode
             ? 'text-purple-400'
             : 'text-indigo-600'
@@ -165,7 +165,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDarkMode }) => {
                     `
                 }}
               >
-                <Icon className={`w-5 h-5 ${action.color} transition-all duration-300`} />
+                <Icon className={`w-4 h-4 ${action.color} transition-all duration-300`} />
                 <span className={`font-medium transition-all duration-500 overflow-hidden whitespace-nowrap ${
                   sidebarCollapsed
                     ? 'w-0 opacity-0 ml-0'
@@ -228,7 +228,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isDarkMode }) => {
                     `
               }}
             >
-              <Icon className={`${sidebarCollapsed ? 'w-6 h-6' : 'w-5 h-5'} transition-all duration-300 ${
+              <Icon className={`${sidebarCollapsed ? 'w-5 h-5' : 'w-4 h-4'} transition-all duration-300 ${
                 isActive
                   ? isDarkMode
                     ? 'text-purple-400'

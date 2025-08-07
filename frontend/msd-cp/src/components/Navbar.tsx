@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Moon, Sun, User, ShoppingCart, Bell, Search, Settings,
-  LogOut, Bookmark, History, HelpCircle, ChevronDown,
-  Home, TrendingUp, Users
+  LogOut, Bookmark, History, HelpCircle, ChevronDown
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
@@ -48,11 +47,7 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
     setGlobalSearchQuery(searchQuery);
   };
 
-  const breadcrumbs = [
-    { label: 'Home', icon: Home, active: true },
-    { label: 'Trending', icon: TrendingUp, active: false },
-    { label: 'Following', icon: Users, active: false },
-  ];
+
   return (
     <nav className={`sticky top-0 left-0 right-0 z-50 backdrop-blur-xl border-b transition-all duration-500 ${
       isDarkMode
@@ -63,44 +58,16 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <h1 className={`text-2xl font-bold bg-clip-text text-transparent transition-all duration-500 ${
+            <h1 className={`text-2xl font-bold bg-clip-text text-transparent transition-all duration-500 animate-gradient ${
               isDarkMode
-                ? 'bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400'
-                : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600'
+                ? 'bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 via-purple-300'
+                : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 via-indigo-500'
             }`}>
               MySillyDreams
             </h1>
           </div>
 
-          {/* Breadcrumb Navigation */}
-          <div className="hidden md:flex items-center space-x-2">
-            {breadcrumbs.map((item, index) => {
-              const Icon = item.icon;
-              return (
-                <React.Fragment key={item.label}>
-                  <button
-                    className={`flex items-center space-x-1 px-3 py-1 rounded-lg transition-all duration-300 hover:scale-105 ${
-                      item.active
-                        ? isDarkMode
-                          ? 'bg-purple-600/20 text-purple-400'
-                          : 'bg-indigo-600/20 text-indigo-600'
-                        : isDarkMode
-                          ? 'text-gray-400 hover:text-gray-300'
-                          : 'text-gray-600 hover:text-gray-700'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm font-medium">{item.label}</span>
-                  </button>
-                  {index < breadcrumbs.length - 1 && (
-                    <span className={`text-sm ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
-                      /
-                    </span>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
+
 
           {/* Search Bar */}
           <div className="flex-1 max-w-md mx-8">
@@ -108,7 +75,7 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
               <div className={`flex items-center rounded-2xl px-4 py-2 transition-all duration-300 ${
                 isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
               }`}>
-                <Search className={`w-5 h-5 mr-3 ${
+                <Search className={`w-4 h-4 mr-3 ${
                   isDarkMode ? 'text-gray-400' : 'text-gray-500'
                 }`} />
                 <input
@@ -149,7 +116,7 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
                     `
                 }}
               >
-                <Bell className={`w-5 h-5 transition-all duration-300 ${
+                <Bell className={`w-4 h-4 transition-all duration-300 ${
                   isDarkMode ? 'text-gray-300' : 'text-gray-600'
                 }`} />
                 {unreadCount > 0 && (
@@ -161,12 +128,12 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
 
               {/* Notifications Dropdown */}
               {showNotifications && (
-                <div className={`absolute right-0 top-full mt-2 w-80 rounded-2xl shadow-2xl border z-50 ${
+                <div className={`absolute right-0 top-full mt-2 w-72 rounded-2xl shadow-2xl border z-50 ${
                   isDarkMode
                     ? 'bg-gray-800 border-gray-700'
                     : 'bg-white border-gray-200'
                 }`}>
-                  <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className={`p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between">
                       <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                         Notifications
@@ -198,8 +165,12 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
                       notifications.slice(0, 10).map((notification) => (
                         <div
                           key={notification.id}
-                          className={`p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300 cursor-pointer ${
-                            !notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                          className={`p-4 border-b transition-colors duration-300 cursor-pointer ${
+                            isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-gray-100 hover:bg-gray-50'
+                          } ${
+                            !notification.read
+                              ? isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'
+                              : ''
                           }`}
                           onClick={() => markAsRead(notification.id)}
                         >
@@ -214,7 +185,7 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
                                 <span className="font-medium">{notification.userName}</span>{' '}
                                 {notification.message}
                               </p>
-                              <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                              <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                 {new Date(notification.createdAt).toLocaleDateString()}
                               </p>
                             </div>
@@ -251,7 +222,7 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
                   `
               }}
             >
-              <ShoppingCart className={`w-5 h-5 transition-all duration-300 ${
+              <ShoppingCart className={`w-4 h-4 transition-all duration-300 ${
                 isDarkMode ? 'text-gray-300' : 'text-gray-600'
               }`} />
               {/* Cart badge */}
@@ -264,7 +235,7 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className={`flex items-center space-x-2 p-2 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 ${
+                className={`flex items-center space-x-2 p-3 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 ${
                   isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
                 }`}
                 style={{
@@ -283,21 +254,21 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
                     `
                 }}
               >
-                <div className="w-10 h-10 rounded-full overflow-hidden">
+                <div className="w-8 h-8 rounded-full overflow-hidden">
                   <img
                     src={currentUser?.avatar || "https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop"}
                     alt="Profile"
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${
+                <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${
                   showUserDropdown ? 'rotate-180' : ''
                 } ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
               </button>
 
               {/* User Dropdown Menu */}
               {showUserDropdown && (
-                <div className={`absolute right-0 top-full mt-2 w-64 rounded-2xl shadow-2xl border z-50 ${
+                <div className={`absolute right-0 top-full mt-2 w-72 rounded-2xl shadow-2xl border z-50 ${
                   isDarkMode
                     ? 'bg-gray-800 border-gray-700'
                     : 'bg-white border-gray-200'
@@ -341,7 +312,7 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
                             isDarkMode ? 'text-gray-300' : 'text-gray-700'
                           }`}
                         >
-                          <Icon className="w-5 h-5" />
+                          <Icon className="w-4 h-4" />
                           <span>{item.label}</span>
                         </button>
                       );
@@ -357,7 +328,7 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
                       }}
                       className={`w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors duration-300 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400`}
                     >
-                      <LogOut className="w-5 h-5" />
+                      <LogOut className="w-4 h-4" />
                       <span>Sign Out</span>
                     </button>
                   </div>
@@ -395,9 +366,9 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkMode, toggleDarkMode }) => {
               }}
             >
               {isDarkMode ? (
-                <Sun className="w-5 h-5 text-yellow-400 transition-all duration-300" />
+                <Sun className="w-4 h-4 text-yellow-400 transition-all duration-300" />
               ) : (
-                <Moon className="w-5 h-5 text-gray-600 transition-all duration-300" />
+                <Moon className="w-4 h-4 text-gray-600 transition-all duration-300" />
               )}
             </button>
           </div>

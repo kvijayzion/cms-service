@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MySillyDreams</string>
+    <string name="welcome_title">Welcome to MySillyDreams</string>
+    <string name="welcome_subtitle">Sign in to continue your creative journey</string>
+    <string name="continue_with_google">Continue with Google</string>
+    <string name="signing_in">Signing in...</string>
+    <string name="terms">Terms</string>
+    <string name="privacy">Privacy</string>
+    <string name="sign_in_success">Successfully signed in with Google!</string>
+    <string name="sign_in_error">Google sign-in failed. Please try again.</string>
+</resources>

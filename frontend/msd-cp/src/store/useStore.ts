@@ -1,48 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { User, Video, Comment } from '../types/video';
 
-// Types
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string;
-  followers: number;
-  following: number;
-  likes: number;
-  videos: number;
-  verified: boolean;
-}
-
-export interface Video {
-  id: string;
-  url: string;
-  title: string;
-  description: string;
-  likes: number;
-  comments: number;
-  shares: number;
-  views: number;
-  duration: number;
-  thumbnail: string;
-  creator: User;
-  createdAt: string;
-  isLiked: boolean;
-  isBookmarked: boolean;
-  tags: string[];
-}
-
-export interface Comment {
-  id: string;
-  userId: string;
-  userName: string;
-  userAvatar: string;
-  content: string;
-  likes: number;
-  replies: Comment[];
-  createdAt: string;
-  isLiked: boolean;
-}
+// Re-export types for backward compatibility
+export type { User, Video, Comment };
 
 export interface Notification {
   id: string;

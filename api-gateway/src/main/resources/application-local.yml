@@ -1,0 +1,124 @@
+# Local Development Configuration
+# Used when SPRING_PROFILES_ACTIVE=local
+# Provides full configuration without requiring ZooKeeper
+
+spring:
+  # Disable ZooKeeper for local development
+  cloud:
+    zookeeper:
+      enabled: false
+      config:
+        enabled: false
+      discovery:
+        enabled: false
+    
+    # Disable service discovery for local
+    discovery:
+      enabled: false
+
+# Gateway Configuration for Local Development
+gateway:
+  csrf:
+    cookie-name: "XSRF-TOKEN"
+    header-name: "X-XSRF-TOKEN"
+    cookie-path: "/"
+    cookie-max-age: 3600
+    cookie-secure: false  # HTTP for local
+    cookie-same-site: "Lax"
+  
+  timeout:
+    global-request-timeout: 60000  # Longer for debugging
+    per-route-timeout: 30000
+  
+  routes:
+    cms-service:
+      uri: "http://localhost:8081"
+      fallback-uri: "forward:/fallback/cms"
+    auth-service:
+      uri: "http://localhost:8082"
+      fallback-uri: "forward:/fallback/auth"
+    user-service:
+      uri: "http://localhost:8083"
+      fallback-uri: "forward:/fallback/user"
+    admin-server:
+      uri: "http://localhost:8084"
+      fallback-uri: "forward:/fallback/admin"
+
+# Permissive rate limiting for local development
+rate-limiter:
+  auth:
+    replenish-rate: 100
+    burst-capacity: 200
+    requested-tokens: 1
+  api:
+    replenish-rate: 1000
+    burst-capacity: 2000
+    requested-tokens: 1
+  admin:
+    replenish-rate: 500
+    burst-capacity: 1000
+    requested-tokens: 1
+  default:
+    replenish-rate: 100
+    burst-capacity: 200
+    requested-tokens: 1
+  
+  ip-resolution:
+    trusted-proxies:
+      - "127.0.0.0/8"
+      - "::1/128"
+    x-forwarded-for-enabled: true
+    x-real-ip-enabled: true
+
+# Security headers for local development
+security:
+  headers:
+    csp:
+      enabled: true
+      nonce-length: 32
+    hsts:
+      enabled: false  # No HTTPS in local
+      max-age: 31536000  # Valid value even though disabled
+      include-subdomains: false
+      preload: false
+    frame-options: "SAMEORIGIN"  # More permissive for local
+    content-type-options: "nosniff"
+    referrer-policy: "strict-origin-when-cross-origin"
+    cross-origin-embedder-policy: "unsafe-none"  # More permissive
+    cross-origin-opener-policy: "unsafe-none"
+    cross-origin-resource-policy: "cross-origin"
+
+# Local environment variables
+CSP_API_POLICY: "default-src 'none'; connect-src 'self' http://localhost:*; frame-ancestors 'none';"
+CSP_WEB_POLICY: "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' ws: wss: http://localhost:* https://localhost:*;"
+PERMISSIONS_POLICY: "geolocation=*, microphone=*, camera=*"
+SENSITIVE_CACHE_POLICY: "no-cache"
+STATIC_CACHE_POLICY: "no-cache"  # No caching in local
+DEFAULT_CACHE_POLICY: "no-cache"
+
+CSRF_PROTECTED_PATHS: "/api/auth/admin/**,/api/users/**,/api/admin/**"
+CSRF_EXEMPT_PATHS: "/api/auth/login,/api/auth/admin/login,/api/auth/refresh,/api/auth/validate,/actuator/**,/api/health/**,/fallback/**"
+
+# Local logging - verbose
+logging:
+  level:
+    com.mysillydreams.gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web.reactive: DEBUG
+    org.springframework.boot.context.config: DEBUG  # Config loading debug
+
+# Local management - all endpoints exposed
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    configprops:
+      show-values: always
+    env:
+      show-values: always
+  tracing:
+    sampling:
+      probability: 1.0
